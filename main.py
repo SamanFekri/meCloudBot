@@ -134,6 +134,21 @@ def handle_message(msg):
 
                 bot.sendMessage(chat_part['id'], resp)
 
+        elif msg['text'].startswith('/get@'):
+            mfile_id = msg['text'][5:]
+
+            if 'files' in current_user:
+                if mfile_id in current_user['files']:
+                    tempFile = current_user['files'][mfile_id]
+                    dest = str(current_user['_id'])
+                    make_dir(dest)
+                    dest += '/' + tempFile['file_name']
+                    bot.download_file(tempFile['file_id'], dest)
+                    fi = open(dest, 'rb+')
+                    bot.sendDocument(chat_part['id'], fi)
+                    fi.close()
+                    os.remove(dest)
+
     else:
         send_as = None
         myFiles = None
@@ -210,7 +225,7 @@ def handle_message(msg):
         resp += 'File name: ' + cur_file['file_name'] + '\n'
         resp += 'File path: ' + cur_file['path']
         bot.sendMessage(chat_part['id'], resp)
-        # print(document_part)
+
         # dest = str(from_part['id']) + "/"
         # # if 'caption' in msg:
         # #     dest += msg['caption']
