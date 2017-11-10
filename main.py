@@ -24,7 +24,7 @@ def handle_message(msg):
 
     current_user = users.find_one({"_id": from_part['id']})
     if current_user is None:
-        current_user = {"_id": from_part['id'], "from": from_part , 'nv': 0, 'na': 0, 'np': 0}
+        current_user = {"_id": from_part['id'], "from": from_part, 'nv': 0, 'na': 0, 'np': 0}
         users.insert_one(current_user)
         current_user = users.find_one({"_id": from_part['id']})
     pprint.pprint(current_user)
@@ -40,6 +40,10 @@ def handle_message(msg):
 
             resp = 'Hey ' + from_part['first_name'] + '!'
             bot.sendMessage(chat_part['id'], resp)
+
+        # elif msg['text'] == '/list':
+        #     if 'files' in current_user:
+        #         if(current_user)
     else:
         send_as = None
         myFiles = None
@@ -70,24 +74,51 @@ def handle_message(msg):
             bot.sendMessage(chat_part['id'], 'Unsupported type')
             return
 
-        cur_file = {'send_as': send_as}
+        # todo: must use caption to re write names and path (path not supported yet)
+        cur_file = {'send_as': send_as, 'path': '/'}
+        cur_file.update(doc_part)
+
         if 'caption' in msg:
+            msg['caption'] = msg['caption'].lower()
+            if msg['caption'].startswith("path:"):
+                temp = msg['caption'][5:]
+                temp = temp.strip()
+                temp = temp.replace("@", "_")
 
-            print('salam')
+                if temp != "":
+                    dirs = temp.split('/')
+                    file_name = dirs[len(dirs) - 1]
 
+                    # file name
+                    if file_name != "":
+                        cur_file['file_name'] = file_name
 
-            # print(document_part)
-            # dest = str(from_part['id']) + "/"
-            # # if 'caption' in msg:
-            # #     dest += msg['caption']
-            # #     make_dir(dest)
-            # dest += "/" + document_part['file_name']
-            # bot.download_file(document_part['file_id'], dest)
-            #
-            # fi = open(dest, 'rb+')
-            # bot.sendDocument(chat_part['id'], fi)
-            # fi.close()
-            # os.remove(dest)
+                    print(dirs)
+                print(temp)
+
+        if myFiles is None:
+            myFiles = {}
+
+        myFiles[str(cur_file['file_id'])] = cur_file
+        current_user['files'] = myFiles
+        users.update_one({'_id': current_user['_id']}, {"$set": current_user})
+
+        resp = 'This file save as:\n'
+        resp += 'File name: ' + cur_file['file_name'] + '\n'
+        resp += 'File path: ' + cur_file['path']
+        bot.sendMessage(chat_part['id'], resp)
+        # print(document_part)
+        # dest = str(from_part['id']) + "/"
+        # # if 'caption' in msg:
+        # #     dest += msg['caption']
+        # #     make_dir(dest)
+        # dest += "/" + document_part['file_name']
+        # bot.download_file(document_part['file_id'], dest)
+        #
+        # fi = open(dest, 'rb+')
+        # bot.sendDocument(chat_part['id'], fi)
+        # fi.close()
+        # os.remove(dest)
 
 
 def start_bot():
