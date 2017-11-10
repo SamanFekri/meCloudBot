@@ -26,8 +26,17 @@ def handle_message(msg):
         if 'document' in msg:
             document_part = msg['document']
             print(document_part)
-            dest = str(from_part['id']) + "/" + document_part['file_name']
+            dest = str(from_part['id']) + "/"
+            # if 'caption' in msg:
+            #     dest += msg['caption']
+            #     make_dir(dest)
+            dest += "/" + document_part['file_name']
             bot.download_file(document_part['file_id'], dest)
+
+            fi = open(dest, 'rb+')
+            bot.sendDocument(chat_part['id'], fi)
+            fi.close()
+            os.remove(dest)
 
 
 def start_bot():
