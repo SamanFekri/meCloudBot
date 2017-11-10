@@ -24,7 +24,8 @@ def handle_message(msg):
 
     current_user = users.find_one({"_id": from_part['id']})
     if current_user is None:
-        current_user = {"_id": from_part['id'], "from": from_part, 'nv': 0, 'na': 0, 'np': 0, 'state': '/'}
+        current_user = {"_id": from_part['id'], "from": from_part, 'nv': 0, 'na': 0, 'np': 0, 'state': '/',
+                        'count_file': 0}
         users.insert_one(current_user)
         current_user = users.find_one({"_id": from_part['id']})
     pprint.pprint(current_user)
@@ -54,7 +55,10 @@ def handle_message(msg):
                     if current_user['state'] == file['path']:
                         resp += file['file_name'] + " " + "/get@" + key + " \n"
                     elif file['path'].startswith(current_user['state']):
-                        next_dir = file['path'][len(current_user['state']):].split('/')[0]
+                        if current_user['state'] == '/':
+                            next_dir = file['path'][len(current_user['state']):].split('/')[0]
+                        else:
+                            next_dir = file['path'][len(current_user['state']) + 1:].split('/')[0]
                         dirs.add(next_dir)
 
                 for dir in dirs:
@@ -66,26 +70,69 @@ def handle_message(msg):
             if current_user['state'] == '/':
                 current_user['state'] = ''
             current_user['state'] += '/' + msg['text'][4:]
+
+            users.update_one({'_id': current_user['_id']}, {"$set": current_user})
+
+            resp = "Files in " + current_user['state'] + ":\n"
+            if current_user['state'] != '/':
+                pass
+            resp += "/back \n"
+
+            if 'files' in current_user:
+                myFiles = current_user['files']
+                dirs = set([])
+                for key in myFiles:
+                    file = myFiles[key]
+                    if current_user['state'] == file['path']:
+                        resp += file['file_name'] + " " + "/get@" + key + " \n"
+                    elif file['path'].startswith(current_user['state']):
+                        if current_user['state'] == '/':
+                            next_dir = file['path'][len(current_user['state']):].split('/')[0]
+                        else:
+                            next_dir = file['path'][len(current_user['state']) + 1:].split('/')[0]
+                        dirs.add(next_dir)
+
+                for dir in dirs:
+                    resp += dir + " " + "/go@" + dir + " \n"
+
+                bot.sendMessage(chat_part['id'], resp)
+
+        elif msg['text'] == '/back':
+            temp = ''
+            dirs = current_user['state'].split('/')
+            if len(dirs) > 0:
+                for i in range(0, len(dirs) - 1):
+                    temp += dirs[i] + '/'
+
+            if len(temp) > 1:
+                temp = temp[0: (len(temp) - 1)]
+
+            current_user['state'] = temp
+
+            users.update_one({'_id': current_user['_id']}, {"$set": current_user})
+
             resp = "Files in " + current_user['state'] + ":\n"
             if current_user['state'] != '/':
                 resp += "/back \n"
 
-            users.update_one({'_id': current_user['_id']}, {"$set": current_user})
+            if 'files' in current_user:
+                myFiles = current_user['files']
+                dirs = set([])
+                for key in myFiles:
+                    file = myFiles[key]
+                    if current_user['state'] == file['path']:
+                        resp += file['file_name'] + " " + "/get@" + key + " \n"
+                    elif file['path'].startswith(current_user['state']):
+                        if current_user['state'] == '/':
+                            next_dir = file['path'][len(current_user['state']):].split('/')[0]
+                        else:
+                            next_dir = file['path'][len(current_user['state']) + 1:].split('/')[0]
+                        dirs.add(next_dir)
 
-            myFiles = current_user['files']
-            dirs = set([])
-            for key in myFiles:
-                file = myFiles[key]
-                if current_user['state'] == file['path']:
-                    resp += file['file_name'] + " " + "/get@" + key + " \n"
-                elif file['path'].startswith(current_user['state']):
-                    next_dir = file['path'][len(current_user['state']):].split('/')[0]
-                    dirs.add(next_dir)
+                for dir in dirs:
+                    resp += dir + " " + "/go@" + dir + " \n"
 
-            for dir in dirs:
-                resp += dir + " " + "/go@" + dir + " \n"
-
-            bot.sendMessage(chat_part['id'], resp)
+                bot.sendMessage(chat_part['id'], resp)
 
     else:
         send_as = None
@@ -98,21 +145,25 @@ def handle_message(msg):
         if 'document' in msg:
             doc_part = msg['document']
             send_as = 'document'
+            current_user['count_file'] += 1
         elif 'photo' in msg:
             doc_part = msg['photo'][1]
             doc_part['file_name'] = 'photo_' + str(current_user['np'])
             current_user['np'] += 1
             send_as = 'photo'
+            current_user['count_file'] += 1
         elif 'video' in msg:
             doc_part = msg['video']
             doc_part['file_name'] = 'video_' + str(current_user['nv'])
             current_user['nv'] += 1
             send_as = 'video'
+            current_user['count_file'] += 1
         elif 'audio' in msg:
             doc_part = msg['audio']
             doc_part['file_name'] = 'audio_' + str(current_user['na'])
             current_user['na'] += 1
             send_as = 'audio'
+            current_user['count_file'] += 1
         else:
             bot.sendMessage(chat_part['id'], 'Unsupported type')
             return
@@ -151,7 +202,7 @@ def handle_message(msg):
         if myFiles is None:
             myFiles = {}
 
-        myFiles[str(cur_file['file_id'])] = cur_file
+        myFiles['SAMF' + str(current_user['count_file'])] = cur_file
         current_user['files'] = myFiles
         users.update_one({'_id': current_user['_id']}, {"$set": current_user})
 
