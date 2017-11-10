@@ -61,6 +61,32 @@ def handle_message(msg):
                     resp += dir + " " + "/go@" + dir + " \n"
 
                 bot.sendMessage(chat_part['id'], resp)
+
+        elif msg['text'].startswith('/go@'):
+            if current_user['state'] == '/':
+                current_user['state'] = ''
+            current_user['state'] += '/' + msg['text'][4:]
+            resp = "Files in " + current_user['state'] + ":\n"
+            if current_user['state'] != '/':
+                resp += "/back \n"
+
+            users.update_one({'_id': current_user['_id']}, {"$set": current_user})
+
+            myFiles = current_user['files']
+            dirs = set([])
+            for key in myFiles:
+                file = myFiles[key]
+                if current_user['state'] == file['path']:
+                    resp += file['file_name'] + " " + "/get@" + key + " \n"
+                elif file['path'].startswith(current_user['state']):
+                    next_dir = file['path'][len(current_user['state']):].split('/')[0]
+                    dirs.add(next_dir)
+
+            for dir in dirs:
+                resp += dir + " " + "/go@" + dir + " \n"
+
+            bot.sendMessage(chat_part['id'], resp)
+
     else:
         send_as = None
         myFiles = None
