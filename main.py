@@ -24,7 +24,7 @@ def handle_message(msg):
 
     current_user = users.find_one({"_id": from_part['id']})
     if current_user is None:
-        current_user = {"_id": from_part['id'], "from": from_part, 'nv': 0, 'na': 0, 'np': 0}
+        current_user = {"_id": from_part['id'], "from": from_part, 'nv': 0, 'na': 0, 'np': 0, 'state': '/'}
         users.insert_one(current_user)
         current_user = users.find_one({"_id": from_part['id']})
     pprint.pprint(current_user)
@@ -41,9 +41,26 @@ def handle_message(msg):
             resp = 'Hey ' + from_part['first_name'] + '!'
             bot.sendMessage(chat_part['id'], resp)
 
-        # elif msg['text'] == '/list':
-        #     if 'files' in current_user:
-        #         if(current_user)
+        elif msg['text'] == '/list':
+            resp = "Files in " + current_user['state'] + ":\n"
+            if current_user['state'] != '/':
+                resp += "/back \n"
+
+            if 'files' in current_user:
+                myFiles = current_user['files']
+                dirs = set([])
+                for key in myFiles:
+                    file = myFiles[key]
+                    if current_user['state'] == file['path']:
+                        resp += file['file_name'] + " " + "/get@" + key + " \n"
+                    elif file['path'].startswith(current_user['state']):
+                        next_dir = file['path'][len(current_user['state']):].split('/')[0]
+                        dirs.add(next_dir)
+
+                for dir in dirs:
+                    resp += dir + " " + "/go@" + dir + " \n"
+
+                bot.sendMessage(chat_part['id'], resp)
     else:
         send_as = None
         myFiles = None
@@ -84,14 +101,23 @@ def handle_message(msg):
                 temp = msg['caption'][5:]
                 temp = temp.strip()
                 temp = temp.replace("@", "_")
+                temp = temp.replace(" ", "_")
 
                 if temp != "":
                     dirs = temp.split('/')
                     file_name = dirs[len(dirs) - 1]
 
+                    if temp.startswith('/'):
+                        cur_file['path'] = temp
+                    else:
+                        cur_file['path'] = '/' + temp
+
                     # file name
                     if file_name != "":
                         cur_file['file_name'] = file_name
+                        cur_file['path'] = cur_file['path'][:len(cur_file['path']) - len(file_name) - 1]
+                    else:
+                        cur_file['path'] = cur_file['path'][:len(cur_file['path']) - 1]
 
                     print(dirs)
                 print(temp)
