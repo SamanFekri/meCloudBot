@@ -186,10 +186,12 @@ def handle_message(msg):
                     if file_name != "":
                         cur_file['file_name'] = file_name
                         cur_file['path'] = cur_file['path'][:len(cur_file['path']) - len(file_name) - 1]
-                        if cur_file['path'] == '':
-                            cur_file['path'] = '/'
                     else:
                         cur_file['path'] = cur_file['path'][:len(cur_file['path']) - 1]
+
+                    if cur_file['path'] == '':
+                        cur_file['path'] = '/'
+
 
                     print(dirs)
                 print(temp)
