@@ -92,6 +92,9 @@ def handle_message(msg):
 
             if 'files' in current_user:
                 if mfile_id in current_user['files']:
+                    resp = 'File: ' + current_user['files'][mfile_id]['file_name'] + ' deleted.\n'
+                    resp += 'Path: ' + current_user['files'][mfile_id]['path']
+                    bot.sendMessage(chat_part['id'], resp)
                     del current_user['files'][mfile_id]
                     users.update_one({'_id': current_user['_id']}, {"$set": current_user})
 
@@ -171,6 +174,8 @@ def handle_message(msg):
                     if file_name != "":
                         cur_file['file_name'] = file_name
                         cur_file['path'] = cur_file['path'][:len(cur_file['path']) - len(file_name) - 1]
+                        if cur_file['path'] == '':
+                            cur_file['path'] = '/'
                     else:
                         cur_file['path'] = cur_file['path'][:len(cur_file['path']) - 1]
 
