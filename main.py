@@ -98,6 +98,18 @@ def handle_message(msg):
                     del current_user['files'][mfile_id]
                     users.update_one({'_id': current_user['_id']}, {"$set": current_user})
 
+        elif msg['text'] == '/help':
+            resp = '/start for start\n'
+            resp += '/help for help\n'
+            resp += '/list show list of files and directories in current directory\n'
+            resp += '/back return to parent directory\n'
+            resp += '/go@[dir_name] change to that directory\n'
+            resp += '/get@[file_id] return that file\n'
+            resp += '/del@[file_id] remove that file\n'
+            resp += 'send a document add document. use (path:[file_path]/[file_name]) in caption to put it in specific'\
+                    ' path in (video, audio, photo) adding name is important because telegram dont pass [file_name]'
+            bot.sendMessage(chat_part['id'], resp)
+
     else:
         send_as = None
         myFiles = None
@@ -226,6 +238,8 @@ def show_dirs(current_user, chat_part):
         for dir in dirs:
             resp += dir + " " + "/go@" + dir + " \n"
 
+        bot.sendMessage(chat_part['id'], resp)
+    else:
         bot.sendMessage(chat_part['id'], resp)
 
 
