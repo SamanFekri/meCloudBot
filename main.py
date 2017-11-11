@@ -6,6 +6,8 @@ from pymongo import MongoClient
 import pprint
 import json
 
+import mimetypes
+
 # bot initial
 token = '498968923:AAF2JRak8zPQDqbDRbIJHaYyFi0T5KlxZWw'
 bot = telepot.Bot(token)
@@ -43,28 +45,7 @@ def handle_message(msg):
             bot.sendMessage(chat_part['id'], resp)
 
         elif msg['text'] == '/list':
-            resp = "Files in " + current_user['state'] + ":\n"
-            if current_user['state'] != '/':
-                resp += "/back \n"
-
-            if 'files' in current_user:
-                myFiles = current_user['files']
-                dirs = set([])
-                for key in myFiles:
-                    file = myFiles[key]
-                    if current_user['state'] == file['path']:
-                        resp += file['file_name'] + " " + "/get@" + key + " \n"
-                    elif file['path'].startswith(current_user['state']):
-                        if current_user['state'] == '/':
-                            next_dir = file['path'][len(current_user['state']):].split('/')[0]
-                        else:
-                            next_dir = file['path'][len(current_user['state']) + 1:].split('/')[0]
-                        dirs.add(next_dir)
-
-                for dir in dirs:
-                    resp += dir + " " + "/go@" + dir + " \n"
-
-                bot.sendMessage(chat_part['id'], resp)
+            show_dirs(current_user=current_user, chat_part=chat_part)
 
         elif msg['text'].startswith('/go@'):
             if current_user['state'] == '/':
@@ -73,29 +54,7 @@ def handle_message(msg):
 
             users.update_one({'_id': current_user['_id']}, {"$set": current_user})
 
-            resp = "Files in " + current_user['state'] + ":\n"
-            if current_user['state'] != '/':
-                pass
-            resp += "/back \n"
-
-            if 'files' in current_user:
-                myFiles = current_user['files']
-                dirs = set([])
-                for key in myFiles:
-                    file = myFiles[key]
-                    if current_user['state'] == file['path']:
-                        resp += file['file_name'] + " " + "/get@" + key + " \n"
-                    elif file['path'].startswith(current_user['state']):
-                        if current_user['state'] == '/':
-                            next_dir = file['path'][len(current_user['state']):].split('/')[0]
-                        else:
-                            next_dir = file['path'][len(current_user['state']) + 1:].split('/')[0]
-                        dirs.add(next_dir)
-
-                for dir in dirs:
-                    resp += dir + " " + "/go@" + dir + " \n"
-
-                bot.sendMessage(chat_part['id'], resp)
+            show_dirs(current_user=current_user, chat_part=chat_part)
 
         elif msg['text'] == '/back':
             temp = ''
@@ -111,28 +70,7 @@ def handle_message(msg):
 
             users.update_one({'_id': current_user['_id']}, {"$set": current_user})
 
-            resp = "Files in " + current_user['state'] + ":\n"
-            if current_user['state'] != '/':
-                resp += "/back \n"
-
-            if 'files' in current_user:
-                myFiles = current_user['files']
-                dirs = set([])
-                for key in myFiles:
-                    file = myFiles[key]
-                    if current_user['state'] == file['path']:
-                        resp += file['file_name'] + " " + "/get@" + key + " \n"
-                    elif file['path'].startswith(current_user['state']):
-                        if current_user['state'] == '/':
-                            next_dir = file['path'][len(current_user['state']):].split('/')[0]
-                        else:
-                            next_dir = file['path'][len(current_user['state']) + 1:].split('/')[0]
-                        dirs.add(next_dir)
-
-                for dir in dirs:
-                    resp += dir + " " + "/go@" + dir + " \n"
-
-                bot.sendMessage(chat_part['id'], resp)
+            show_dirs(current_user=current_user, chat_part=chat_part)
 
         elif msg['text'].startswith('/get@'):
             mfile_id = msg['text'][5:]
@@ -149,6 +87,14 @@ def handle_message(msg):
                     fi.close()
                     os.remove(dest)
 
+        elif msg['text'].startswith('/del@'):
+            mfile_id = msg['text'][5:]
+
+            if 'files' in current_user:
+                if mfile_id in current_user['files']:
+                    del current_user['files'][mfile_id]
+                    users.update_one({'_id': current_user['_id']}, {"$set": current_user})
+
     else:
         send_as = None
         myFiles = None
@@ -163,19 +109,36 @@ def handle_message(msg):
             current_user['count_file'] += 1
         elif 'photo' in msg:
             doc_part = msg['photo'][1]
-            doc_part['file_name'] = 'photo_' + str(current_user['np'])
+            ext = ''
+            if 'mime_type' in doc_part:
+                ext = get_extension(doc_part['mime_type'])
+            else:
+                ext = '.png'
+            if ext is None:
+                ext = ''
+            doc_part['file_name'] = 'photo_' + str(current_user['np']) + ext
             current_user['np'] += 1
             send_as = 'photo'
             current_user['count_file'] += 1
         elif 'video' in msg:
             doc_part = msg['video']
-            doc_part['file_name'] = 'video_' + str(current_user['nv'])
+            ext = ''
+            if 'mime_type' in doc_part:
+                ext = get_extension(doc_part['mime_type'])
+            if ext is None:
+                ext = ''
+            doc_part['file_name'] = 'video_' + str(current_user['nv']) + ext
             current_user['nv'] += 1
             send_as = 'video'
             current_user['count_file'] += 1
         elif 'audio' in msg:
             doc_part = msg['audio']
-            doc_part['file_name'] = 'audio_' + str(current_user['na'])
+            ext = ''
+            if 'mime_type' in doc_part:
+                ext = get_extension(doc_part['mime_type'])
+            if ext is None:
+                ext = ''
+            doc_part['file_name'] = 'audio_' + str(current_user['na']) + ext
             current_user['na'] += 1
             send_as = 'audio'
             current_user['count_file'] += 1
@@ -226,18 +189,6 @@ def handle_message(msg):
         resp += 'File path: ' + cur_file['path']
         bot.sendMessage(chat_part['id'], resp)
 
-        # dest = str(from_part['id']) + "/"
-        # # if 'caption' in msg:
-        # #     dest += msg['caption']
-        # #     make_dir(dest)
-        # dest += "/" + document_part['file_name']
-        # bot.download_file(document_part['file_id'], dest)
-        #
-        # fi = open(dest, 'rb+')
-        # bot.sendDocument(chat_part['id'], fi)
-        # fi.close()
-        # os.remove(dest)
-
 
 def start_bot():
     MessageLoop(bot, handle_message).run_forever()
@@ -246,6 +197,43 @@ def start_bot():
 def make_dir(user_id):
     if not os.path.exists(user_id):
         os.makedirs(user_id)
+
+
+def show_dirs(current_user, chat_part):
+    resp = "Files in " + current_user['state'] + ":\n"
+    if current_user['state'] != '/':
+        resp += "/back \n"
+
+    if 'files' in current_user:
+        myFiles = current_user['files']
+        dirs = set([])
+        for key in myFiles:
+            file = myFiles[key]
+            if current_user['state'] == file['path']:
+                resp += file['file_name'] + " get: " + "/get@" + key + " delete: " + "/del@" + key + " \n"
+            elif file['path'].startswith(current_user['state']):
+                if current_user['state'] == '/':
+                    next_dir = file['path'][len(current_user['state']):].split('/')[0]
+                else:
+                    next_dir = file['path'][len(current_user['state']) + 1:].split('/')[0]
+                dirs.add(next_dir)
+
+        for dir in dirs:
+            resp += dir + " " + "/go@" + dir + " \n"
+
+        bot.sendMessage(chat_part['id'], resp)
+
+
+def get_extension(mime_type):
+    for i in range(len(mime_type)):
+        temp = mimetypes.guess_all_extensions(mime_type[:len(mime_type) - i], False)
+        print(temp)
+        if temp != []:
+            for t in temp:
+                if t[-1] == mime_type[-1]:
+                    return t
+            return temp[0]
+    return None
 
 
 start_bot()
