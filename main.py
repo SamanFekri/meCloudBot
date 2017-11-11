@@ -123,7 +123,7 @@ def handle_message(msg):
             send_as = 'document'
             current_user['count_file'] += 1
         elif 'photo' in msg:
-            doc_part = msg['photo'][1]
+            doc_part = msg['photo'][0]
             ext = ''
             if 'mime_type' in doc_part:
                 ext = get_extension(doc_part['mime_type'])
