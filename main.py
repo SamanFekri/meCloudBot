@@ -115,7 +115,7 @@ def handle_message(msg):
                         show_dirs(current_user=current_user, chat_part=chat_part)
             else:
                 resp = 'invalid input\n'
-                resp += '/change [file_id] [new_file_name]'
+                resp += '/change_name [file_id] [new_file_name]'
                 bot.sendMessage(chat_part['id'], resp)
 
         elif msg['text'] == '/help':
