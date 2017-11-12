@@ -50,7 +50,13 @@ def handle_message(msg):
         elif msg['text'].startswith('/go@'):
             if current_user['state'] == '/':
                 current_user['state'] = ''
-            current_user['state'] += '/' + msg['text'][4:]
+
+            if msg['text'][4:].startswith('/'):
+                current_user['state'] = msg['text'][4:]
+            elif msg['text'][4:] == '~':
+                current_user['state'] = '/'
+            else:
+                current_user['state'] += '/' + msg['text'][4:]
 
             users.update_one({'_id': current_user['_id']}, {"$set": current_user})
 
