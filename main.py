@@ -104,6 +104,20 @@ def handle_message(msg):
                     del current_user['files'][mfile_id]
                     users.update_one({'_id': current_user['_id']}, {"$set": current_user})
 
+        elif msg['text'].startswith('/change_name'):
+            parts = msg['text'].split(' ')
+            if len(parts) == 3:
+                if 'files' in current_user:
+                    if parts[1] in current_user['files']:
+                        mfile = current_user['files'][parts[1]]
+                        mfile['file_name'] = parts[2]
+                        users.update_one({'_id': current_user['_id']}, {"$set": current_user})
+                        show_dirs(current_user=current_user, chat_part=chat_part)
+            else:
+                resp = 'invalid input\n'
+                resp += '/change [file_id] [new_file_name]'
+                bot.sendMessage(chat_part['id'], resp)
+
         elif msg['text'] == '/help':
             resp = '/start for start\n'
             resp += '/help for help\n'
@@ -112,8 +126,11 @@ def handle_message(msg):
             resp += '/go@[dir_name] change to that directory\n'
             resp += '/get@[file_id] return that file\n'
             resp += '/del@[file_id] remove that file\n'
-            resp += 'send a document add document. use (path:[file_path]/[file_name]) in caption to put it in specific'\
-                    ' path in (video, audio, photo) adding name is important because telegram dont pass [file_name]'
+            resp += '/change_name [file_id] [new_file_name]\n'
+            resp += 'send a document add document.\n'
+            resp += 'use (path:[file_path]/[file_name]) in caption\n'
+            resp += 'to put it in specific path.\n'
+            resp += 'in (video, audio, photo) adding name is important because telegram don\'t pass [file_name]'
             bot.sendMessage(chat_part['id'], resp)
 
     else:
