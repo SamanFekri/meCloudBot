@@ -229,7 +229,8 @@ def handle_message(msg):
 
         resp = 'This file save as:\n'
         resp += 'File name: <b>' + cur_file['file_name'] + '</b>\n'
-        resp += 'File path: <b>' + cur_file['path'] + '</b>'
+        resp += 'File path: <b>' + cur_file['path'] + '</b>\n'
+        resp += 'File ID: <b>' + 'SAMF' + str(current_user['count_file']) + '</b>'
         bot.sendMessage(chat_part['id'], resp, parse_mode='html')
 
 
