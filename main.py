@@ -173,7 +173,7 @@ def handle_message(msg):
             resp += '/get@[file_id] return that file\n'
             resp += '/del@[file_id] remove that file\n'
             resp += '/change_name [file_id] [new_file_name]\n'
-            resp += '/change_name [file_id] [new_file_path]\n'
+            resp += '/mov [file_id] [new_file_path]\n'
             resp += 'send a document for adding document.\n'
             resp += 'use (<b>path:[file_path]/[file_name]</b>) in caption to path from <i>current location</i>.\n'
             resp += 'use (<b>path:/[file_path]/[file_name]</b>) in caption to path from <i>root</i>.\n'
