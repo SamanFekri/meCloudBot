@@ -48,21 +48,21 @@ def handle_message(msg):
             show_dirs(current_user=current_user, chat_part=chat_part)
 
         elif msg['text'] == '/whereami':
-            resp = 'Your current directory is: <i>' + current_user['state'] + '</i>'
+            resp = 'Your current directory is: <b>' + current_user['state'] + '</b>'
             bot.sendMessage(chat_part['id'], resp, parse_mode='html')
 
         elif msg['text'].startswith('/go@'):
             if current_user['state'] == '/':
                 current_user['state'] = ''
+            if len(msg['text'][4:]) > 0:
+                if msg['text'][4:].startswith('/'):
+                    current_user['state'] = msg['text'][4:]
+                elif msg['text'][4:] == '~':
+                    current_user['state'] = '/'
+                else:
+                    current_user['state'] += '/' + msg['text'][4:]
 
-            if msg['text'][4:].startswith('/'):
-                current_user['state'] = msg['text'][4:]
-            elif msg['text'][4:] == '~':
-                current_user['state'] = '/'
-            else:
-                current_user['state'] += '/' + msg['text'][4:]
-
-            users.update_one({'_id': current_user['_id']}, {"$set": current_user})
+                users.update_one({'_id': current_user['_id']}, {"$set": current_user})
 
             show_dirs(current_user=current_user, chat_part=chat_part)
 
@@ -167,11 +167,13 @@ def handle_message(msg):
             resp = '/start for start\n'
             resp += '/help for help\n'
             resp += '/list show list of files and directories in current directory\n'
+            resp += '/whereami show current directory\n'
             resp += '/back return to parent directory\n'
             resp += '/go@[dir_name] change to that directory\n'
             resp += '/get@[file_id] return that file\n'
             resp += '/del@[file_id] remove that file\n'
             resp += '/change_name [file_id] [new_file_name]\n'
+            resp += '/change_name [file_id] [new_file_path]\n'
             resp += 'send a document for adding document.\n'
             resp += 'use (<b>path:[file_path]/[file_name]</b>) in caption to path from <i>current location</i>.\n'
             resp += 'use (<b>path:/[file_path]/[file_name]</b>) in caption to path from <i>root</i>.\n'
