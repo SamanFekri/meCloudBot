@@ -127,11 +127,11 @@ def handle_message(msg):
             resp += '/get@[file_id] return that file\n'
             resp += '/del@[file_id] remove that file\n'
             resp += '/change_name [file_id] [new_file_name]\n'
-            resp += 'send a document add document.\n'
-            resp += 'use (path:[file_path]/[file_name]) in caption\n'
-            resp += 'to put it in specific path.\n'
+            resp += 'send a document for adding document.\n'
+            resp += 'use (<b>path:[file_path]/[file_name]</b>) in caption to path from <i>current location</i>.\n'
+            resp += 'use (<b>path:/[file_path]/[file_name]</b>) in caption to path from <i>root</i>.\n'
             resp += 'in (video, audio, photo) adding name is important because telegram don\'t pass [file_name]'
-            bot.sendMessage(chat_part['id'], resp)
+            bot.sendMessage(chat_part['id'], resp, parse_mode='html')
 
     else:
         send_as = None
@@ -203,7 +203,7 @@ def handle_message(msg):
                     if temp.startswith('/'):
                         cur_file['path'] = temp
                     else:
-                        cur_file['path'] = '/' + temp
+                        cur_file['path'] = current_user['state'] + '/' + temp
 
                     # file name
                     if file_name != "":
@@ -215,9 +215,10 @@ def handle_message(msg):
                     if cur_file['path'] == '':
                         cur_file['path'] = '/'
 
-
                     print(dirs)
                 print(temp)
+        else:
+            cur_file['path'] = current_user['state']
 
         if myFiles is None:
             myFiles = {}
@@ -227,9 +228,10 @@ def handle_message(msg):
         users.update_one({'_id': current_user['_id']}, {"$set": current_user})
 
         resp = 'This file save as:\n'
-        resp += 'File name: ' + cur_file['file_name'] + '\n'
-        resp += 'File path: ' + cur_file['path']
-        bot.sendMessage(chat_part['id'], resp)
+        resp += 'File name: <b>' + cur_file['file_name'] + '</b>\n'
+        resp += 'File path: <b>' + cur_file['path'] + '</b>'
+        bot.sendMessage(chat_part['id'], resp, parse_mode='html')
+
 
 
 def start_bot():
@@ -242,7 +244,7 @@ def make_dir(user_id):
 
 
 def show_dirs(current_user, chat_part):
-    resp = "Files in " + current_user['state'] + ":\n"
+    resp = "Files in <b>" + current_user['state'] + "</b>:\n"
     if current_user['state'] != '/':
         resp += "/back \n"
 
@@ -252,7 +254,8 @@ def show_dirs(current_user, chat_part):
         for key in myFiles:
             file = myFiles[key]
             if current_user['state'] == file['path']:
-                resp += file['file_name'] + " get: " + "/get@" + key + " delete: " + "/del@" + key + " \n"
+                resp += '<b>' + file['file_name']+'</b>' \
+                        + " <i>get: </i>" + "/get@" + key + " <i>delete: </i>" + "/del@" + key + " \n"
             elif file['path'].startswith(current_user['state']):
                 if current_user['state'] == '/':
                     next_dir = file['path'][len(current_user['state']):].split('/')[0]
@@ -261,11 +264,9 @@ def show_dirs(current_user, chat_part):
                 dirs.add(next_dir)
 
         for dir in dirs:
-            resp += dir + " " + "/go@" + dir + " \n"
+            resp += '<b>' + dir +'</b>' + " " + "/go@" + dir + " \n"
 
-        bot.sendMessage(chat_part['id'], resp)
-    else:
-        bot.sendMessage(chat_part['id'], resp)
+    bot.sendMessage(chat_part['id'], resp, parse_mode='html')
 
 
 def get_extension(mime_type):
