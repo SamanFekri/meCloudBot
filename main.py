@@ -47,6 +47,10 @@ def handle_message(msg):
         elif msg['text'] == '/list':
             show_dirs(current_user=current_user, chat_part=chat_part)
 
+        elif msg['text'] == '/whereami':
+            resp = 'Your current directory is: <i>' + current_user['state'] + '</i>'
+            bot.sendMessage(chat_part['id'], resp, parse_mode='html')
+
         elif msg['text'].startswith('/go@'):
             if current_user['state'] == '/':
                 current_user['state'] = ''
@@ -79,7 +83,7 @@ def handle_message(msg):
             show_dirs(current_user=current_user, chat_part=chat_part)
 
         elif msg['text'].startswith('/get@'):
-            mfile_id = msg['text'][5:]
+            mfile_id = msg['text'][5:].upper()
 
             if 'files' in current_user:
                 if mfile_id in current_user['files']:
@@ -94,7 +98,7 @@ def handle_message(msg):
                     os.remove(dest)
 
         elif msg['text'].startswith('/del@'):
-            mfile_id = msg['text'][5:]
+            mfile_id = msg['text'][5:].upper()
 
             if 'files' in current_user:
                 if mfile_id in current_user['files']:
@@ -108,6 +112,7 @@ def handle_message(msg):
             parts = msg['text'].split(' ')
             if len(parts) == 3:
                 if 'files' in current_user:
+                    parts[1] = parts[1].upper()
                     if parts[1] in current_user['files']:
                         mfile = current_user['files'][parts[1]]
                         mfile['file_name'] = parts[2]
@@ -116,6 +121,46 @@ def handle_message(msg):
             else:
                 resp = 'invalid input\n'
                 resp += '/change_name [file_id] [new_file_name]'
+                bot.sendMessage(chat_part['id'], resp)
+
+        elif msg['text'].startswith('/mov'):
+            parts = msg['text'].split(' ')
+            if len(parts) == 3:
+                if 'files' in current_user:
+                    parts[1] = parts[1].upper()
+                    if parts[1] in current_user['files']:
+                        mfile = current_user['files'][parts[1]]
+
+                        path = parts[2]
+                        if len(path) > 0:
+
+                            if not path.startswith('/'):
+                                if current_user['state'] == '/':
+                                    path = '/' + path
+                                else:
+                                    path = current_user['state'] + '/' + path
+
+                            if path != '/' and path[-1] == '/':
+                                path = path[:-1]
+
+                            mfile['path'] = path
+                            users.update_one({'_id': current_user['_id']}, {"$set": current_user})
+
+                            resp = 'This file moves to <b>' + mfile['path'] + '</b>.\n'
+                            resp += 'File Info:\n'
+                            resp += 'File name: <b>' + mfile['file_name'] + '</b>\n'
+                            resp += 'File path: <b>' + mfile['path'] + '</b>\n'
+                            resp += 'File ID: <b>' + 'SAMF' + str(current_user['count_file']) + '</b>'
+                            bot.sendMessage(chat_part['id'], resp, parse_mode='html')
+                            return
+                        else:
+                            resp = 'invalid input\n'
+                            resp += '/mov [file_id] [new_file_path]'
+                            bot.sendMessage(chat_part['id'], resp)
+                            return
+            else:
+                resp = 'invalid input\n'
+                resp += '/mov [file_id] [new_file_path]'
                 bot.sendMessage(chat_part['id'], resp)
 
         elif msg['text'] == '/help':
@@ -234,7 +279,6 @@ def handle_message(msg):
         bot.sendMessage(chat_part['id'], resp, parse_mode='html')
 
 
-
 def start_bot():
     MessageLoop(bot, handle_message).run_forever()
 
@@ -255,7 +299,7 @@ def show_dirs(current_user, chat_part):
         for key in myFiles:
             file = myFiles[key]
             if current_user['state'] == file['path']:
-                resp += '<b>' + file['file_name']+'</b>' \
+                resp += '<b>' + file['file_name'] + '</b>' \
                         + " <i>get: </i>" + "/get@" + key + " <i>delete: </i>" + "/del@" + key + " \n"
             elif file['path'].startswith(current_user['state']):
                 if current_user['state'] == '/':
@@ -265,7 +309,7 @@ def show_dirs(current_user, chat_part):
                 dirs.add(next_dir)
 
         for dir in dirs:
-            resp += '<b>' + dir +'</b>' + " " + "/go@" + dir + " \n"
+            resp += '<b>' + dir + '</b>' + " " + "/go@" + dir + " \n"
 
     bot.sendMessage(chat_part['id'], resp, parse_mode='html')
 
