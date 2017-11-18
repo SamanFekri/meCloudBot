@@ -62,6 +62,9 @@ def handle_message(msg):
                 else:
                     current_user['state'] += '/' + msg['text'][4:]
 
+                if current_user['state'] != '/' and current_user['state'][-1] == '/':
+                    current_user['state'] = current_user['state'][:-1]
+
                 users.update_one({'_id': current_user['_id']}, {"$set": current_user})
 
             show_dirs(current_user=current_user, chat_part=chat_part)
