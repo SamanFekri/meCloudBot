@@ -96,7 +96,17 @@ def handle_message(msg):
                     dest += '/' + tempFile['file_name']
                     bot.download_file(tempFile['file_id'], dest)
                     fi = open(dest, 'rb+')
-                    bot.sendDocument(chat_part['id'], fi)
+
+                    if tempFile['send_as'] == 'photo':
+                        bot.sendPhoto(chat_part['id'], fi)
+                    elif tempFile['send_as'] == 'audio':
+                        bot.sendAudio(chat_part['id'], fi)
+                    elif tempFile['send_as'] == 'video':
+                        bot.sendVideo(chat_part['id'], fi)
+                    else:
+                        bot.sendDocument(chat_part['id'], fi)
+
+
                     fi.close()
                     os.remove(dest)
 
