@@ -7,6 +7,7 @@ import pprint
 import json
 
 import mimetypes
+import requests
 
 # bot initial
 token = '498968923:AAF2JRak8zPQDqbDRbIJHaYyFi0T5KlxZWw'
@@ -106,7 +107,6 @@ def handle_message(msg):
                     else:
                         bot.sendDocument(chat_part['id'], fi)
 
-
                     fi.close()
                     os.remove(dest)
 
@@ -116,8 +116,8 @@ def handle_message(msg):
             if 'files' in current_user:
                 if mfile_id in current_user['files']:
                     resp = 'File: ' + current_user['files'][mfile_id]['file_name'] + ' deleted.\n'
-                    resp += 'Path: ' + current_user['files'][mfile_id]['path']
-                    bot.sendMessage(chat_part['id'], resp)
+                    resp += 'Path: <b>' + current_user['files'][mfile_id]['path'] + '</b>'
+                    bot.sendMessage(chat_part['id'], resp, parse_mode='html')
                     del current_user['files'][mfile_id]
                     users.update_one({'_id': current_user['_id']}, {"$set": current_user})
 
@@ -176,6 +176,47 @@ def handle_message(msg):
                 resp += '/mov [file_id] [new_file_path]'
                 bot.sendMessage(chat_part['id'], resp)
 
+        elif msg['text'].startswith('/dl'):
+            parts = msg['text'].split(' ')
+            if len(parts) == 2:
+                try:
+                    url = parts[1]
+                    make_dir(str(from_part['id']))
+                    name = str(from_part['id']) + '/' + parts[1].split('/')[-1].replace(' ', '_')
+                    download(url, name)
+
+                    file = open(name, 'rb+')
+                    tempFile = bot.sendDocument(chat_part['id'], file)['document']
+                    file.close()
+
+                    os.remove(name)
+
+                    if 'files' not in current_user:
+                        current_user['files'] = {}
+
+                    current_user['count_file'] += 1
+                    tempFile['send_as'] = 'document'
+                    tempFile['path'] = '/downloads'
+                    current_user['files']['SAMF' + str(current_user['count_file'])] = tempFile
+
+                    users.update_one({'_id': current_user['_id']}, {"$set": current_user})
+
+                    resp = 'This file save as:\n'
+                    resp += 'File name: <b>' + tempFile['file_name'] + '</b>\n'
+                    resp += 'File path: <b>' + tempFile['path'] + '</b>\n'
+                    resp += 'File ID: <b>' + 'SAMF' + str(current_user['count_file']) + '</b>'
+                    bot.sendMessage(chat_part['id'], resp, parse_mode='html')
+
+                except Exception:
+                    resp = 'invalid input\n'
+                    resp += '/dl [file_url]'
+                    bot.sendMessage(chat_part['id'], resp)
+
+            else:
+                resp = 'invalid input\n'
+                resp += '/dl [file_url]'
+                bot.sendMessage(chat_part['id'], resp)
+
         elif msg['text'] == '/help':
             resp = '/start for start\n'
             resp += '/help for help\n'
@@ -187,6 +228,7 @@ def handle_message(msg):
             resp += '/del@[file_id] remove that file\n'
             resp += '/change_name [file_id] [new_file_name]\n'
             resp += '/mov [file_id] [new_file_path]\n'
+            resp += '/dl [file_url]. download that file in downloads folder\n'
             resp += 'send a document for adding document.\n'
             resp += 'use (<b>path:[file_path]/[file_name]</b>) in caption to path from <i>current location</i>.\n'
             resp += 'use (<b>path:/[file_path]/[file_name]</b>) in caption to path from <i>root</i>.\n'
@@ -315,7 +357,8 @@ def show_dirs(current_user, chat_part):
             file = myFiles[key]
             if current_user['state'] == file['path']:
                 resp += '<b>' + file['file_name'] + '</b>' \
-                        + " <i>get: </i>" + "/get@" + key + " <i>delete: </i>" + "/del@" + key + " \n"
+                        + " <i>get: </i> /get@" + key \
+                        + " <i>delete: </i>" + "/del@" + key + " \n"
             elif file['path'].startswith(current_user['state']):
                 if current_user['state'] == '/':
                     next_dir = file['path'][len(current_user['state']):].split('/')[0]
@@ -339,6 +382,16 @@ def get_extension(mime_type):
                     return t
             return temp[0]
     return None
+
+
+def download(url, file_name):
+    # open in binary mode
+    with open(file_name, "wb") as file:
+        # get request
+        response = requests.get(url)
+        # write to file
+        file.write(response.content)
+        file.close()
 
 
 start_bot()
