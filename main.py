@@ -9,6 +9,7 @@ import json
 import mimetypes
 import requests
 
+import _thread
 # bot initial
 token = '498968923:AAF2JRak8zPQDqbDRbIJHaYyFi0T5KlxZWw'
 bot = telepot.Bot(token)
@@ -178,44 +179,7 @@ def handle_message(msg):
 
         elif msg['text'].startswith('/dl'):
             parts = msg['text'].split(' ')
-            if len(parts) == 2:
-                try:
-                    url = parts[1]
-                    make_dir(str(from_part['id']))
-                    name = str(from_part['id']) + '/' + parts[1].split('/')[-1].replace(' ', '_')
-                    download(url, name)
-
-                    file = open(name, 'rb+')
-                    tempFile = bot.sendDocument(chat_part['id'], file)['document']
-                    file.close()
-
-                    os.remove(name)
-
-                    if 'files' not in current_user:
-                        current_user['files'] = {}
-
-                    current_user['count_file'] += 1
-                    tempFile['send_as'] = 'document'
-                    tempFile['path'] = '/downloads'
-                    current_user['files']['SAMF' + str(current_user['count_file'])] = tempFile
-
-                    users.update_one({'_id': current_user['_id']}, {"$set": current_user})
-
-                    resp = 'This file save as:\n'
-                    resp += 'File name: <b>' + tempFile['file_name'] + '</b>\n'
-                    resp += 'File path: <b>' + tempFile['path'] + '</b>\n'
-                    resp += 'File ID: <b>' + 'SAMF' + str(current_user['count_file']) + '</b>'
-                    bot.sendMessage(chat_part['id'], resp, parse_mode='html')
-
-                except Exception:
-                    resp = 'invalid input\n'
-                    resp += '/dl [file_url]'
-                    bot.sendMessage(chat_part['id'], resp)
-
-            else:
-                resp = 'invalid input\n'
-                resp += '/dl [file_url]'
-                bot.sendMessage(chat_part['id'], resp)
+            _thread.start_new_thread(dl_command, (parts, from_part, chat_part, current_user, ))
 
         elif msg['text'] == '/help':
             resp = '/start for start\n'
@@ -392,6 +356,50 @@ def download(url, file_name):
         # write to file
         file.write(response.content)
         file.close()
+
+
+def dl_command(parts, from_part, chat_part, current_user):
+    if len(parts) == 2:
+        try:
+            url = parts[1]
+            make_dir(str(from_part['id']))
+            name = str(from_part['id']) + '/' + parts[1].split('/')[-1].replace(' ', '_')
+            download(url, name)
+
+            file = open(name, 'rb+')
+            tempFile = bot.sendDocument(chat_part['id'], file)
+            print(tempFile)
+            tempFile = tempFile['document']
+            file.close()
+
+            os.remove(name)
+
+            if 'files' not in current_user:
+                current_user['files'] = {}
+
+            current_user['count_file'] += 1
+            tempFile['send_as'] = 'document'
+            tempFile['path'] = '/downloads'
+            current_user['files']['SAMF' + str(current_user['count_file'])] = tempFile
+
+            users.update_one({'_id': current_user['_id']}, {"$set": current_user})
+
+            resp = 'This file save as:\n'
+            resp += 'File name: <b>' + tempFile['file_name'] + '</b>\n'
+            resp += 'File path: <b>' + tempFile['path'] + '</b>\n'
+            resp += 'File ID: <b>' + 'SAMF' + str(current_user['count_file']) + '</b>'
+            bot.sendMessage(chat_part['id'], resp, parse_mode='html')
+
+        except Exception as e:
+            make_dir(str(from_part['id']))
+            file = open(str(from_part['id']) + '/log.sam', 'wb+')
+            file.write(str(e))
+            file.close()
+
+    else:
+        resp = 'invalid input\n'
+        resp += '/dl [file_url]'
+        bot.sendMessage(chat_part['id'], resp)
 
 
 start_bot()
