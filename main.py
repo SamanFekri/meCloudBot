@@ -368,7 +368,9 @@ def dl_command(parts, from_part, chat_part, current_user):
 
             file = open(name, 'rb+')
             tempFile = bot.sendDocument(chat_part['id'], file)
-            print(tempFile)
+
+
+
             tempFile = tempFile['document']
             file.close()
 
@@ -393,7 +395,7 @@ def dl_command(parts, from_part, chat_part, current_user):
         except Exception as e:
             make_dir(str(from_part['id']))
             file = open(str(from_part['id']) + '/log.sam', 'wb+')
-            file.write(e)
+            file.write(bytes(str(e)))
             file.close()
 
     else:
