@@ -369,9 +369,20 @@ def dl_command(parts, from_part, chat_part, current_user):
             file = open(name, 'rb+')
             tempFile = bot.sendDocument(chat_part['id'], file)
 
+            send_as = ''
+            if 'document' in tempFile:
+                send_as = 'document'
+                tempFile = tempFile[send_as]
+            elif 'photo' in tempFile:
+                send_as = 'photo'
+                tempFile = tempFile[send_as]
+            elif 'video' in tempFile:
+                send_as = 'video'
+                tempFile = tempFile[send_as]
+            elif 'audio' in tempFile:
+                send_as = 'audio'
+                tempFile = tempFile[send_as]
 
-
-            tempFile = tempFile['document']
             file.close()
 
             os.remove(name)
@@ -380,7 +391,7 @@ def dl_command(parts, from_part, chat_part, current_user):
                 current_user['files'] = {}
 
             current_user['count_file'] += 1
-            tempFile['send_as'] = 'document'
+            tempFile['send_as'] = send_as
             tempFile['path'] = '/downloads'
             current_user['files']['SAMF' + str(current_user['count_file'])] = tempFile
 
@@ -395,7 +406,7 @@ def dl_command(parts, from_part, chat_part, current_user):
         except Exception as e:
             make_dir(str(from_part['id']))
             file = open(str(from_part['id']) + '/log.sam', 'wb+')
-            file.write(bytes(str(e)))
+            file.write(bytes(str(e), 'utf-8'))
             file.close()
 
     else:
