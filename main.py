@@ -392,6 +392,7 @@ def dl_command(parts, from_part, chat_part, current_user):
 
             current_user['count_file'] += 1
             tempFile['send_as'] = send_as
+            tempFile['file_name'] = parts[1].split('/')[-1].replace(' ', '_')
             tempFile['path'] = '/downloads'
             current_user['files']['SAMF' + str(current_user['count_file'])] = tempFile
 
